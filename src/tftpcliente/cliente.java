@@ -1,5 +1,8 @@
 package tftpcliente;
+import java.net.*;
 
-public class cliente {
-
+public class Cliente {
+	DatagramSocket ds;
+	
+	
 }
