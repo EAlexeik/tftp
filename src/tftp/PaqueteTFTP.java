@@ -1,6 +1,11 @@
 package tftp;
 
+import java.util.ArrayList;
+
 public class PaqueteTFTP {
+	
+	//Definicion de espacio
+	static final byte CERO=0x00;
 	
 	//Definicion de OPCODE
 	static final char OPCODE_RRQ=0x01;
@@ -20,7 +25,7 @@ public class PaqueteTFTP {
 	
 	//Definicion de un metodo sobre la estructura Peticion para Lectura y Escritura de datos (RRQ/WRQ)
 	public String PeticionEscrituraLectura(char opcode, String nomFichero, String modo){
-		return opcode+nomFichero+0x0+modo+0x0;
+		return opcode+nomFichero+CERO+modo+CERO;
 	}
 	
 	//Definicion de la estructura del paquete para envio de datos (DATA)
@@ -61,7 +66,68 @@ public class PaqueteTFTP {
 			default:
 				mensajeError="Error no definido";
 		}
-		return OPCODE_ERROR+numeroError+mensajeError+0x0;
+		return OPCODE_ERROR+numeroError+mensajeError+CERO;
 	}
 	
+	//Metodo de desgloce en estructura de cada Opcode
+	public ArrayList RecibirPeticion(String peticion){
+		ArrayList<Character> aux=new ArrayList<Character>();
+		ArrayList arreglo=new ArrayList();
+		char opcode=peticion.charAt(0);
+		int tamanio;
+		arreglo.add(opcode);
+		
+		switch(opcode){
+		//Peticion de lectura y escritura
+		case 0x01: case 0x02:
+			ArrayList<Byte> bytesFichero=new ArrayList<Byte>();
+			int encontrado=0;
+			byte[] b=peticion.getBytes();
+			tamanio=b.length;
+			for(int i=2;i<tamanio;i++){
+				bytesFichero.add(b[i]);
+				if(b[i]==CERO){
+					encontrado=i;
+					break;
+				}
+			}
+			bytesFichero.clear();
+			arreglo.add(bytesFichero.toString());
+			for(int i=encontrado;i<tamanio;i++){
+				bytesFichero.add(b[i]);
+				if(b[i]==CERO){
+					encontrado=i;
+					break;
+				}
+			}
+			bytesFichero.clear();
+			arreglo.add(bytesFichero.toString());
+			break;
+		//Recepcion de datos
+		case 0x03:
+			char[] charACK=peticion.toCharArray();
+			tamanio=charACK.length;
+			arreglo.add(charACK[1]);
+			for(int i=2;i<tamanio;i++){
+				aux.add(charACK[i]);
+			}
+			arreglo.add(charACK.toString());
+			break;
+		//Recepcion de contador
+		case 0x04:
+			arreglo.add(peticion.charAt(1));
+			break;
+		//Lectura de error
+		case 0x05:
+			char[] charError=peticion.toCharArray();
+			tamanio=charError.length;
+			arreglo.add(charError[1]);
+			for(int i=2;i<tamanio;i++){
+				aux.add(charError[i]);
+			}
+			arreglo.add(charError.toString());
+			break;
+		}
+		return arreglo;
+	}
 }
